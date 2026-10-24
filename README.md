@@ -75,6 +75,10 @@ isValidSolution(daily.puzzle, submittedGrid);
 - 出题在 Web Worker 里跑，不阻塞界面
 - 键盘：1–9 填数（Shift+数字 = 笔记）、方向键移动、Backspace 擦除、N 切换笔记、H 提示、Ctrl+Z / Ctrl+Y 撤销 / 重做
 - 多语言：`src/i18n/{zh,en,de}.ts`，`en.ts` 是源文件，其他语言缺键会在类型检查时报错
+- 两种模式：经典（本地出题）和每日一题（从服务器取题，答案在本地用 `solve` 算出；完成后自动提交成绩，失败可重试，下次打开也会补交）
+- API 客户端在 `src/api/client.ts`：首次需要时自动创建游客，token 存在 localStorage（键 `sudoku:guest`），服务器不认这个 token 时自动重建一次
+- API 地址：`VITE_API_URL`，默认开发时 `http://localhost:8787`、生产 `https://sudoku-api.gamestao.com`
+- 本地联调：同时启动 web 和 server（`.claude/launch.json` 里两项都有）
 
 ## apps/server
 

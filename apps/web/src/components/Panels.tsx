@@ -33,7 +33,7 @@ export function LanguageSwitcher() {
   );
 }
 
-export function StatusBar({ game }: { game: Game }) {
+export function StatusBar({ game, label = '' }: { game: Game; label?: string }) {
   const { t } = useTranslation();
   const item = (label: string, value: ReactNode) => (
     <div className="flex flex-col items-center">
@@ -43,7 +43,7 @@ export function StatusBar({ game }: { game: Game }) {
   );
   return (
     <div className="grid grid-cols-4 text-sm">
-      {item('', t(`difficulty.${game.difficulty}`))}
+      {item(label, t(`difficulty.${game.difficulty}`))}
       {item(t('status.mistakes'), game.mistakes)}
       {item(t('status.hints'), game.hintsUsed)}
       {item(t('status.time'), formatTime(game.elapsedMs))}
@@ -93,7 +93,7 @@ export function HintPanel({ game }: { game: Game }) {
   );
 }
 
-function Dialog({
+export function Dialog({
   title,
   children,
   onClose,
