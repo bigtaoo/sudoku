@@ -107,3 +107,48 @@ isValidSolution(daily.puzzle, submittedGrid);
 - 每日难度按星期：一 简单、二三 中等、四五 困难、六日 专家
 - 防作弊（游客级别）：必须先打开题目；上报用时不能超过“打开到提交”的实际时间 + 15 秒
 - 环境变量：`PORT`（8787）、`HOST`、`DB_PATH`（`./data/sudoku.sqlite`）、`CORS_ORIGINS`、`RATE_LIMIT`（每 IP 每分钟 120）、`LOG_LEVEL`
+
+## 部署
+
+### 后端：`sudoku-api.gamestao.com`（Hetzner VPS + Cloudflare Tunnel）
+
+- 镜像：`apps/server/Dockerfile`（从仓库根构建）。第一阶段装整个 workspace 并用 esbuild 打包，第二阶段只留 `dist/server.js` 和后端的生产依赖（`pnpm deploy --prod`）；以非 root 用户运行，自带 `/healthz` 健康检查，空闲内存约 50 MB
+- 编排：`deploy/docker-compose.yml`，两个容器：`sudoku-api` 和 `cloudflared`。**不映射任何宿主端口，也不碰 VPS 上的其它服务**（80/443 归 D:unny 那套的 Caddy）：`cloudflared` 主动连到 Cloudflare，把 `sudoku-api.gamestao.com` 的请求转给 `sudoku-api:8787`
+- 真实 IP：请求都从 `cloudflared` 进来，compose 里设了 `REAL_IP_HEADER=cf-connecting-ip`，限流按这个头里的访客 IP 计；不设时按 `X-Forwarded-For` / 连接地址（本地开发）
+- 数据：命名卷 `sudoku_sudoku-data` 挂到 `/data`（`DB_PATH=/data/sudoku.sqlite`）
+- 配置：`deploy/.env`（照 `deploy/.env.example`，不进 git）里必填 `TUNNEL_TOKEN`，可选覆盖 `CORS_ORIGINS`（默认 `https://s.gamestao.com`）、`RATE_LIMIT`、`LOG_LEVEL`
+- `cloudflared` 的健康检查调它自己的 `/ready`：隧道没连上时容器显示 unhealthy
+
+首次建隧道（Cloudflare 后台，一次性）：
+
+1. Zero Trust → Networks → Tunnels → Create a tunnel → Cloudflared，起名 `sudoku`
+2. 复制安装命令里 `--token` 后面那串，填进 VPS 上的 `deploy/.env` 的 `TUNNEL_TOKEN`
+3. Public Hostname：`sudoku-api.gamestao.com` → Service `HTTP` / `sudoku-api:8787`（Cloudflare 自动建 CNAME，橙云）
+
+```bash
+# VPS 上（代码放在 /root/sodu）
+cp deploy/.env.example deploy/.env   # 填 TUNNEL_TOKEN
+docker compose -f deploy/docker-compose.yml up -d --build
+docker compose -f deploy/docker-compose.yml ps    # 两个容器都应是 healthy
+```
+
+本机试跑镜像：
+
+```bash
+docker build -f apps/server/Dockerfile -t sudoku-api .
+docker run --rm -p 127.0.0.1:8787:8787 -v sudoku-data:/data sudoku-api
+```
+
+### 前端：`s.gamestao.com`（Cloudflare Workers 静态资源）
+
+- `apps/web/wrangler.jsonc`：纯静态资源 Worker `sudoku-web`，`custom_domain` 首次部署时自动建 DNS 和证书；关掉了 `workers.dev` 和预览地址
+- `apps/web/public/_headers`：`assets/*` 带哈希，永久缓存；`/`、`index.html`、`sw.js`、`manifest.webmanifest` 一律 `no-cache`。Cloudflare 的 `_headers` 多条匹配会合并而不是覆盖，所以每个路径只写一条规则
+- `/index.html` 在 Workers 上会 307 到 `/`，Workbox 预缓存时会自动处理，不影响离线
+
+```bash
+pnpm --filter @sudoku/web build
+pnpm --filter @sudoku/web exec wrangler login     # 首次，浏览器 OAuth；CI 用 CLOUDFLARE_API_TOKEN
+pnpm --filter @sudoku/web cf:deploy
+```
+
+本机用 Workers 运行时预览构建产物（校验响应头、Service Worker）：`pnpm --filter @sudoku/web exec wrangler dev --port 8799`（`.claude/launch.json` 里的 `web-cf`）。

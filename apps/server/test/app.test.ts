@@ -155,3 +155,35 @@ describe('api', () => {
     expect(no.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
+
+describe('rate limit', () => {
+  async function limitedApp(realIpHeader?: string) {
+    const limited = await buildApp({
+      db,
+      config: { corsOrigins: [], rateLimit: 2, realIpHeader, logLevel: 'silent' },
+      logger: false,
+    });
+    const hit = (ip: string) =>
+      limited
+        .inject({ method: 'GET', url: '/healthz', headers: { 'cf-connecting-ip': ip } })
+        .then((res) => res.statusCode);
+    return { limited, hit };
+  }
+
+  it('keys on the real-IP header when one is configured', async () => {
+    const { limited, hit } = await limitedApp('cf-connecting-ip');
+    expect([await hit('1.1.1.1'), await hit('1.1.1.1'), await hit('1.1.1.1')]).toEqual([
+      200, 200, 429,
+    ]);
+    expect(await hit('2.2.2.2')).toBe(200);
+    await limited.close();
+  });
+
+  it('ignores the header when none is configured', async () => {
+    const { limited, hit } = await limitedApp();
+    await hit('1.1.1.1');
+    await hit('2.2.2.2');
+    expect(await hit('3.3.3.3')).toBe(429);
+    await limited.close();
+  });
+});

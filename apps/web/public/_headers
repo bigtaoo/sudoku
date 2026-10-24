@@ -1,0 +1,17 @@
+# Cloudflare Workers static-assets headers. Matching rules are merged, not overridden, so every
+# path below is matched by exactly one rule.
+
+# Hashed build output: a changed file gets a new name, so it can be cached forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fixed names that must be revalidated on every load, or players keep an old app shell
+# (and the service worker never sees an update).
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache

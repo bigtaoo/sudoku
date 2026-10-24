@@ -18,6 +18,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@sudoku/server", "dev"],
       "port": 8787
+    },
+    {
+      "name": "web-cf",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@sudoku/web", "exec", "wrangler", "dev", "--port", "8799"],
+      "port": 8799
     }
   ]
 }

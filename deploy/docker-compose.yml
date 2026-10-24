@@ -1,0 +1,51 @@
+# Sudoku API on the shared Hetzner VPS (checkout at /root/sodu):
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#
+# Self-contained: no host ports are published and nothing is shared with the other stacks on the
+# VPS (their Caddy owns 80/443). Traffic for sudoku-api.gamestao.com reaches the API through a
+# Cloudflare Tunnel: cloudflared dials out to Cloudflare and forwards to sudoku-api:8787.
+# The tunnel and its public hostname are configured in the Cloudflare dashboard; its token goes in
+# deploy/.env as TUNNEL_TOKEN (see .env.example).
+
+name: sudoku
+
+services:
+  sudoku-api:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    image: sudoku-api:latest
+    container_name: sudoku-api
+    environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://s.gamestao.com}
+      RATE_LIMIT: ${RATE_LIMIT:-120}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Every request arrives from cloudflared; the visitor's IP is in this header.
+      REAL_IP_HEADER: cf-connecting-ip
+    volumes:
+      - sudoku-data:/data
+    # The VPS has 2 GB shared by a dozen containers; this process idles at ~50 MB.
+    mem_limit: 256m
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.3
+    container_name: sudoku-cloudflared
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in deploy/.env}
+      TUNNEL_METRICS: 127.0.0.1:20241
+    healthcheck:
+      # The image has no shell; cloudflared queries its own /ready endpoint.
+      test: ['CMD', 'cloudflared', 'tunnel', '--metrics', '127.0.0.1:20241', 'ready']
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      - sudoku-api
+    mem_limit: 128m
+    restart: unless-stopped
+
+volumes:
+  sudoku-data:

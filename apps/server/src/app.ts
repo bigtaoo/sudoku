@@ -24,7 +24,7 @@ import type { Db } from './db';
 
 export interface AppOptions {
   db: Db;
-  config: Pick<Config, 'corsOrigins' | 'rateLimit' | 'logLevel'>;
+  config: Pick<Config, 'corsOrigins' | 'rateLimit' | 'realIpHeader' | 'logLevel'>;
   /** Injectable clock for tests. */
   now?: () => number;
   logger?: boolean;
@@ -55,8 +55,8 @@ function parse<T extends z.ZodType>(
 export async function buildApp({ db, config, now = Date.now, logger = true }: AppOptions) {
   const app = Fastify({
     logger: logger && { level: config.logLevel },
-    // Behind Cloudflare and Caddy; the client IP comes from X-Forwarded-For.
-    trustProxy: true,
+    // Without a dedicated header, assume a reverse proxy that sets X-Forwarded-For.
+    trustProxy: !config.realIpHeader,
     bodyLimit: 16 * 1024,
   });
 
@@ -66,7 +66,18 @@ export async function buildApp({ db, config, now = Date.now, logger = true }: Ap
     allowedHeaders: ['Authorization', 'Content-Type'],
     maxAge: 86_400,
   });
-  await app.register(rateLimit, { max: config.rateLimit, timeWindow: '1 minute' });
+  const { realIpHeader } = config;
+  await app.register(rateLimit, {
+    max: config.rateLimit,
+    timeWindow: '1 minute',
+    // Behind the tunnel every request arrives from cloudflared, so key on the header it forwards.
+    keyGenerator: realIpHeader
+      ? (req) => {
+          const value = req.headers[realIpHeader];
+          return (Array.isArray(value) ? value[0] : value) || req.ip;
+        }
+      : (req) => req.ip,
+  });
 
   const q = {
     guestByToken: db.prepare('SELECT id, name FROM guests WHERE token_hash = ?'),
@@ -153,7 +164,8 @@ export async function buildApp({ db, config, now = Date.now, logger = true }: Ap
     return date;
   };
 
-  app.get('/healthz', async () => ({ ok: true }));
+  // Polled by the Docker healthcheck every 30 s; keep it out of the info-level request log.
+  app.get('/healthz', { logLevel: 'warn' }, async () => ({ ok: true }));
 
   app.post(
     '/v1/guests',

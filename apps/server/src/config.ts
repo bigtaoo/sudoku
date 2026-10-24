@@ -6,6 +6,11 @@ export interface Config {
   corsOrigins: string[];
   /** Requests per minute per IP across the API. */
   rateLimit: number;
+  /**
+   * Request header carrying the real client IP, set by a trusted proxy in front of the API
+   * (cf-connecting-ip behind a Cloudflare Tunnel). Unset: use X-Forwarded-For / the socket.
+   */
+  realIpHeader?: string | undefined;
   logLevel: string;
 }
 
@@ -19,6 +24,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .map((s) => s.trim())
       .filter(Boolean),
     rateLimit: Number(env.RATE_LIMIT ?? 120),
+    realIpHeader: env.REAL_IP_HEADER?.trim().toLowerCase() || undefined,
     logLevel: env.LOG_LEVEL ?? 'info',
   };
 }
