@@ -28,9 +28,9 @@ export function NumberPad({ game }: { game: Game }) {
             disabled={left === 0 || game.status !== 'playing'}
             aria-label={`${d}, ${t('pad.remaining', { count: left })}`}
             onClick={() => apply(inputDigit, d)}
-            className="flex aspect-[3/4] flex-col items-center justify-center rounded-md bg-surface text-entry shadow-sm transition active:scale-95 disabled:opacity-25"
+            className="flex h-[clamp(3.25rem,8dvh,4.5rem)] flex-col items-center justify-center rounded-md bg-surface text-entry shadow-sm transition active:scale-95 disabled:opacity-25"
           >
-            <span className="text-2xl leading-none sm:text-3xl">{d}</span>
+            <span className="text-3xl leading-none">{d}</span>
             <span className="mt-1 text-[10px] leading-none text-muted">{left || ''}</span>
           </button>
         );

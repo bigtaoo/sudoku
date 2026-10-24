@@ -62,7 +62,10 @@ export function App() {
   useTimer(playing);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-[min(32rem,calc(100dvh-18rem))] min-w-[18rem] flex-col gap-3 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    // Width is capped so the board plus everything else fits one screen: the keypad takes 8dvh and the
+    // other rows about 15rem. On phones the spare height goes above the controls, which sit at the
+    // bottom within thumb reach.
+    <div className="mx-auto flex min-h-full max-w-[min(32rem,calc(92dvh-16rem))] min-w-[18rem] flex-col gap-3 px-2 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-3">
       <header className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold tracking-tight">{t('app.title')}</h1>
         <div className="flex items-center gap-2">
@@ -82,10 +85,15 @@ export function App() {
       {game ? (
         <>
           <StatusBar game={game} {...(mode === 'daily' ? { label: dailyLabel } : {})} />
-          <Board game={game} />
-          <HintPanel game={game} />
-          <Toolbar game={game} />
-          <NumberPad game={game} />
+          {/* The hint floats above the board, over the status rows, so nothing below it moves. */}
+          <div className="relative">
+            <HintPanel game={game} />
+            <Board game={game} />
+          </div>
+          <div className="flex flex-col gap-3 max-sm:mt-auto">
+            <Toolbar game={game} />
+            <NumberPad game={game} />
+          </div>
           {mode === 'classic' && game.status === 'won' && !picking && (
             <WinDialog game={game} onAgain={() => setPicking(true)} />
           )}

@@ -68,7 +68,10 @@ export function HintPanel({ game }: { game: Game }) {
   }
 
   return (
-    <div role="status" className="rounded-lg border border-hint-strong bg-hint p-3 text-sm">
+    <div
+      role="status"
+      className="absolute inset-x-0 bottom-full z-20 mb-2 rounded-lg border border-hint-strong bg-hint p-3 text-sm shadow-lg"
+    >
       {title && <div className="mb-1 font-semibold">{title}</div>}
       <p className="leading-snug">{body}</p>
       <div className="mt-2 flex justify-end gap-2">

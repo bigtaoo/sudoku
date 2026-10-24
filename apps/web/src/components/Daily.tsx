@@ -23,7 +23,7 @@ export function ModeSwitch({ onLeaderboard }: { onLeaderboard: () => void }) {
       aria-pressed={mode === m}
       onClick={() => mode !== m && setMode(m)}
       className={`flex-1 rounded-md py-1.5 text-sm font-medium transition ${
-        mode === m ? 'bg-surface text-ink shadow-sm' : 'text-muted'
+        mode === m ? 'bg-accent text-accent-ink shadow-sm' : 'text-muted'
       }`}
     >
       {t(`mode.${m}`)}
