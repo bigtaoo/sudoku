@@ -48,86 +48,92 @@ export function Board({ game }: { game: Game }) {
     return 'none';
   };
 
+  const cell = (i: number) => {
+    const v = game.values[i]!;
+    const col = COL_OF[i]!;
+    const row = ROW_OF[i]!;
+    const given = isGiven(game, i);
+    const wrong = isWrong(game, i);
+    const notes = game.notes[i]!;
+    const label = [
+      t('cell.label', { row: row + 1, col: col + 1 }),
+      v
+        ? given
+          ? t('cell.given', { digit: v })
+          : t('cell.value', { digit: v })
+        : notes
+          ? t('cell.notes', { digits: digitsOf(notes).join(' ') })
+          : t('cell.empty'),
+    ].join(', ');
+    return (
+      <button
+        key={i}
+        type="button"
+        role="gridcell"
+        aria-label={label}
+        aria-selected={i === selected}
+        onClick={() => apply(select, i)}
+        className={[
+          'relative flex items-center justify-center outline-none',
+          SHADE_CLASS[shadeOf(i)],
+          i === selected ? 'shadow-[inset_0_0_0_2px_var(--accent)]' : '',
+        ].join(' ')}
+      >
+        {wrong && (
+          // Shape cue for a wrong digit, so it does not rely on the red alone.
+          <span
+            aria-hidden
+            className="absolute top-0 right-0 size-[30%] bg-wrong [clip-path:polygon(0_0,100%_0,100%_100%)]"
+          />
+        )}
+        {v ? (
+          <span
+            className={[
+              'text-[7.2cqw] leading-none',
+              given ? 'font-semibold text-ink' : wrong ? 'text-wrong' : 'text-entry',
+            ].join(' ')}
+          >
+            {v}
+          </span>
+        ) : notes ? (
+          <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-[0.3cqw]">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+              const on = (notes >> d) & 1;
+              const gone = (eliminated.get(i) ?? 0) & (1 << d);
+              return (
+                <span
+                  key={d}
+                  className={[
+                    'flex items-center justify-center text-[3cqw] leading-none',
+                    gone ? 'font-bold text-wrong line-through' : 'text-muted',
+                    on && selDigit === d && !gone ? 'font-bold text-entry' : '',
+                  ].join(' ')}
+                >
+                  {on ? d : ''}
+                </span>
+              );
+            })}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
+
+  // Boxes are their own grids: the hairlines between cells show the light bg-line, the gaps
+  // between boxes the dark bg-line-strong, so box edges differ in colour as well as width.
   return (
     <div
       role="grid"
       aria-label={t('app.title')}
-      className="@container grid aspect-square w-full grid-cols-9 overflow-hidden rounded-md border-2 border-line-strong bg-line select-none"
+      className="@container grid aspect-square w-full grid-cols-3 gap-[2px] overflow-hidden rounded-md border-2 border-line-strong bg-line-strong select-none"
     >
-      {game.values.map((v, i) => {
-        const col = COL_OF[i]!;
-        const row = ROW_OF[i]!;
-        const given = isGiven(game, i);
-        const wrong = isWrong(game, i);
-        const notes = game.notes[i]!;
-        const label = [
-          t('cell.label', { row: row + 1, col: col + 1 }),
-          v
-            ? given
-              ? t('cell.given', { digit: v })
-              : t('cell.value', { digit: v })
-            : notes
-              ? t('cell.notes', { digits: digitsOf(notes).join(' ') })
-              : t('cell.empty'),
-        ].join(', ');
-        return (
-          <button
-            key={i}
-            type="button"
-            role="gridcell"
-            aria-label={label}
-            aria-selected={i === selected}
-            onClick={() => apply(select, i)}
-            className={[
-              'relative flex items-center justify-center outline-none',
-              SHADE_CLASS[shadeOf(i)],
-              i === selected ? 'shadow-[inset_0_0_0_2px_var(--accent)]' : '',
-              // Hairline gaps come from the bg-line container; thick box borders via extra margin.
-              col % 3 === 2 && col < 8 ? 'mr-[2px]' : 'mr-px',
-              row % 3 === 2 && row < 8 ? 'mb-[2px]' : 'mb-px',
-              col === 8 ? 'mr-0' : '',
-              row === 8 ? 'mb-0' : '',
-            ].join(' ')}
-          >
-            {wrong && (
-              // Shape cue for a wrong digit, so it does not rely on the red alone.
-              <span
-                aria-hidden
-                className="absolute top-0 right-0 size-[30%] bg-wrong [clip-path:polygon(0_0,100%_0,100%_100%)]"
-              />
-            )}
-            {v ? (
-              <span
-                className={[
-                  'text-[7.2cqw] leading-none',
-                  given ? 'font-semibold text-ink' : wrong ? 'text-wrong' : 'text-entry',
-                ].join(' ')}
-              >
-                {v}
-              </span>
-            ) : notes ? (
-              <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-[0.3cqw]">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
-                  const on = (notes >> d) & 1;
-                  const gone = (eliminated.get(i) ?? 0) & (1 << d);
-                  return (
-                    <span
-                      key={d}
-                      className={[
-                        'flex items-center justify-center text-[3cqw] leading-none',
-                        gone ? 'font-bold text-wrong line-through' : 'text-muted',
-                        on && selDigit === d && !gone ? 'font-bold text-entry' : '',
-                      ].join(' ')}
-                    >
-                      {on ? d : ''}
-                    </span>
-                  );
-                })}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
+      {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((b) => (
+        <div key={b} className="grid grid-cols-3 gap-px bg-line">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((k) =>
+            cell((Math.floor(b / 3) * 3 + Math.floor(k / 3)) * 9 + (b % 3) * 3 + (k % 3)),
+          )}
+        </div>
+      ))}
     </div>
   );
 }
