@@ -6,6 +6,8 @@
   // Cache headers live in public/_headers (copied into dist/ by Vite).
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "sudoku-web",
+  // Lets CI deploy with just an API token (no OAuth login, no account lookup).
+  "account_id": "e64b61f1629ebcc49ee9b6eea2a95b82",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./dist",

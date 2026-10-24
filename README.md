@@ -113,7 +113,7 @@ isValidSolution(daily.puzzle, submittedGrid);
 ### 后端：`sudoku-api.gamestao.com`（Hetzner VPS + Cloudflare Tunnel）
 
 - 镜像：`apps/server/Dockerfile`（从仓库根构建）。第一阶段装整个 workspace 并用 esbuild 打包，第二阶段只留 `dist/server.js` 和后端的生产依赖（`pnpm deploy --prod`）；以非 root 用户运行，自带 `/healthz` 健康检查，空闲内存约 50 MB
-- 编排：`deploy/docker-compose.yml`，两个容器：`sudoku-api` 和 `cloudflared`。**不映射任何宿主端口，也不碰 VPS 上的其它服务**（80/443 归 D:unny 那套的 Caddy）：`cloudflared` 主动连到 Cloudflare，把 `sudoku-api.gamestao.com` 的请求转给 `sudoku-api:8787`
+- 编排：`deploy/docker-compose.yml`，两个容器：`sudoku-api` 和 `cloudflared`。**不映射任何宿主端口，也不碰 VPS 上的其它服务**（80/443 归 funny 那套的 Caddy）：`cloudflared` 主动连到 Cloudflare，把 `sudoku-api.gamestao.com` 的请求转给 `sudoku-api:8787`
 - 真实 IP：请求都从 `cloudflared` 进来，compose 里设了 `REAL_IP_HEADER=cf-connecting-ip`，限流按这个头里的访客 IP 计；不设时按 `X-Forwarded-For` / 连接地址（本地开发）
 - 数据：命名卷 `sudoku_sudoku-data` 挂到 `/data`（`DB_PATH=/data/sudoku.sqlite`）
 - 配置：`deploy/.env`（照 `deploy/.env.example`，不进 git）里必填 `TUNNEL_TOKEN`，可选覆盖 `CORS_ORIGINS`（默认 `https://s.gamestao.com`）、`RATE_LIMIT`、`LOG_LEVEL`
@@ -152,3 +152,34 @@ pnpm --filter @sudoku/web cf:deploy
 ```
 
 本机用 Workers 运行时预览构建产物（校验响应头、Service Worker）：`pnpm --filter @sudoku/web exec wrangler dev --port 8799`（`.claude/launch.json` 里的 `web-cf`）。
+
+### 自动部署（GitHub Actions）
+
+`.github/workflows/ci.yml`：每次 push 和 PR 都跑 `check`（format、lint、typecheck、test、前后端构建）；push 到 `main` 且检查通过后，两个部署任务并行：
+
+- `deploy-web`：用 `check` 产出的 `dist` 执行 `wrangler deploy`，然后请求一次 `https://s.gamestao.com/`
+- `deploy-api`：SSH 到 VPS，把本次提交的 sha 交给 `deploy/deploy.sh`。脚本只接受 `main` 上、且不比当前部署旧的提交，然后 `git reset --hard`、`docker compose up -d --build --wait`（两个容器都 healthy 才算成功），最后清理旧镜像。之后 CI 再请求一次 `/healthz`
+
+两个部署任务各自排队（`concurrency`），不会同时跑两次部署。
+
+一次性设置：
+
+1. Cloudflare → My Profile → API Tokens → Create Token → 模板 “Edit Cloudflare Workers”，账号选 gamestao 所在账号，Zone 选 `gamestao.com`（自定义域名要用）。账号 ID 已写在 `wrangler.jsonc`
+2. 生成 CI 专用的 SSH 密钥，并在 VPS 上用 forced command 限制它：这把钥匙只能运行部署脚本，不能开 shell，也不能做端口转发
+
+   ```bash
+   ssh-keygen -t ed25519 -N '' -C sudoku-ci -f sudoku-ci
+   # VPS 上 /root/.ssh/authorized_keys 追加一行：
+   # command="sh /root/sodu/deploy/deploy.sh",restrict ssh-ed25519 AAAA...（sudoku-ci.pub 的内容）
+   ```
+
+3. 仓库 Secrets（Settings → Secrets and variables → Actions，或用 `gh secret set`）：
+
+   | Secret                 | 内容                                     |
+   | ---------------------- | ---------------------------------------- |
+   | `CLOUDFLARE_API_TOKEN` | 第 1 步的 token                          |
+   | `VPS_HOST`             | VPS 的 IP                                |
+   | `VPS_SSH_KEY`          | 私钥 `sudoku-ci` 的全文                  |
+   | `VPS_KNOWN_HOSTS`      | `ssh-keyscan -t ed25519 <VPS IP>` 的输出 |
+
+在 VPS 上手动部署某个提交：`SSH_ORIGINAL_COMMAND=<完整 sha> sh /root/sodu/deploy/deploy.sh`。
