@@ -11,10 +11,10 @@
 ```
 packages/
   core/     纯 TS 数独引擎，不依赖任何框架；前端、后端、以后的 App 都用它
-  shared/   （待建）API 类型与 zod schema
+  shared/   API 契约：zod schema 与类型，前后端共用
 apps/
-  web/      （待建）React + Vite 前端
-  server/   （待建）Fastify + SQLite 后端
+  web/      React + Vite 前端
+  server/   Fastify + SQLite（node:sqlite）后端
 ```
 
 ## 常用命令
@@ -66,3 +66,32 @@ isValidSolution(daily.puzzle, submittedGrid);
 
 生成耗时（本机，中位数）：easy ≈ 2 ms，medium ≈ 25 ms，hard ≈ 75 ms，expert ≈ 40 ms；
 单题最慢不到 0.5 s。前端会放在 Web Worker 里生成，避免卡界面。
+
+## apps/web
+
+`pnpm --filter @sudoku/web dev` 启动开发服务器（http://localhost:5173）。
+
+- 纯规则在 `src/game/game.ts`（填数、笔记、撤销/重做、提示、计时），Zustand store 只负责调用并持久化到 localStorage（键 `sudoku:v1`）
+- 出题在 Web Worker 里跑，不阻塞界面
+- 键盘：1–9 填数（Shift+数字 = 笔记）、方向键移动、Backspace 擦除、N 切换笔记、H 提示、Ctrl+Z / Ctrl+Y 撤销 / 重做
+- 多语言：`src/i18n/{zh,en,de}.ts`，`en.ts` 是源文件，其他语言缺键会在类型检查时报错
+
+## apps/server
+
+`pnpm --filter @sudoku/server dev` 启动开发服务器（http://localhost:8787）；`pnpm --filter @sudoku/server build`打包成`dist/server.js`（`@sudoku/*` 打进包里，npm 依赖保持外部）。
+
+数据库用 Node 内置的 `node:sqlite`（不需要编译原生模块，镜像小），手写 SQL，迁移按 `PRAGMA user_version` 递增。
+
+| 接口                              | 说明                                                    |
+| --------------------------------- | ------------------------------------------------------- |
+| `POST /v1/guests`                 | 创建游客，返回 `token`（只返回一次，库里只存 SHA-256）  |
+| `GET` / `PATCH /v1/me`            | 查看 / 修改昵称（Bearer token）                         |
+| `GET /v1/daily/:date`             | 每日一题（按日期确定性生成并缓存）；带 token 时开始计时 |
+| `POST /v1/daily/:date/result`     | 提交答案：服务器用 `isValidSolution` 校验，每人每天一次 |
+| `GET /v1/daily/:date/leaderboard` | 排行榜，按 `用时 + 提示×30s + 错误×10s` 排序            |
+| `GET /healthz`                    | 健康检查                                                |
+
+- `date` 用玩家本地日期，只接受 UTC 昨天 / 今天 / 明天（覆盖 UTC−12 到 UTC+14）
+- 每日难度按星期：一 简单、二三 中等、四五 困难、六日 专家
+- 防作弊（游客级别）：必须先打开题目；上报用时不能超过“打开到提交”的实际时间 + 15 秒
+- 环境变量：`PORT`（8787）、`HOST`、`DB_PATH`（`./data/sudoku.sqlite`）、`CORS_ORIGINS`、`RATE_LIMIT`（每 IP 每分钟 120）、`LOG_LEVEL`

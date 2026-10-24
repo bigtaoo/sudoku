@@ -1,0 +1,16 @@
+{
+  "name": "@sudoku/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API contract (zod schemas and types) shared by the web client and the server.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}
