@@ -63,7 +63,9 @@ export function DailyLoading() {
   const loadDaily = useGameStore((s) => s.loadDaily);
   return (
     <div className="py-20 text-center text-muted">
-      <p>{failed ? t('daily.error') : t('daily.loading')}</p>
+      <p>
+        {!failed ? t('daily.loading') : navigator.onLine ? t('daily.error') : t('daily.offline')}
+      </p>
       {failed && (
         <button
           type="button"

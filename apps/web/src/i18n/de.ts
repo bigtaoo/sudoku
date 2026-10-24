@@ -31,6 +31,8 @@ const de: Messages = {
   daily: {
     loading: 'Tagesrätsel wird geladen…',
     error: 'Das Tagesrätsel konnte nicht geladen werden. Prüfe deine Verbindung.',
+    offline:
+      'Du bist offline. Das Tagesrätsel braucht eine Verbindung, der klassische Modus geht auch offline.',
     retry: 'Erneut versuchen',
     title: 'Tagesrätsel · {{date}}',
     submitting: 'Zeit wird übermittelt…',
@@ -57,6 +59,12 @@ const de: Messages = {
     save: 'Speichern',
     saveError: 'Speichern fehlgeschlagen. Erlaubt sind 1–20 Zeichen.',
     close: 'Schließen',
+  },
+  pwa: {
+    offlineReady: 'Jetzt auch offline spielbar.',
+    update: 'Eine neue Version ist verfügbar.',
+    reload: 'Aktualisieren',
+    later: 'Später',
   },
   pad: { remaining: 'noch {{count}}' },
   cell: {

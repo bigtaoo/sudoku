@@ -80,6 +80,14 @@ isValidSolution(daily.puzzle, submittedGrid);
 - API 地址：`VITE_API_URL`，默认开发时 `http://localhost:8787`、生产 `https://sudoku-api.gamestao.com`
 - 本地联调：同时启动 web 和 server（`.claude/launch.json` 里两项都有）
 
+### PWA
+
+- `vite-plugin-pwa`（Workbox generateSW）：预缓存整个前端（含出题 Worker 和三种语言），经典模式完全离线可玩；每日一题和排行榜需要联网，恢复网络后自动重新加载 / 补交成绩
+- 更新策略是“提示”：有新版本时弹出提示，玩家点“更新”才刷新，不会打断正在玩的局；已安装的应用每小时检查一次更新
+- 图标：`scripts/icons.mjs` 用 sharp 从同一个 SVG 设计生成 `public/` 下的 favicon、192/512、maskable、apple-touch-icon（改设计后跑 `pnpm --filter @sudoku/web icons`）
+- Service Worker 只在生产构建里生效：`pnpm --filter @sudoku/web build && pnpm --filter @sudoku/web preview` 测试（http://localhost:4173）
+- 部署时 `sw.js` 和 `index.html` 不能被长期缓存（Cloudflare 上设 `Cache-Control: no-cache`），`assets/` 带哈希可以永久缓存
+
 ## apps/server
 
 `pnpm --filter @sudoku/server dev` 启动开发服务器（http://localhost:8787）；`pnpm --filter @sudoku/server build`打包成`dist/server.js`（`@sudoku/*` 打进包里，npm 依赖保持外部）。

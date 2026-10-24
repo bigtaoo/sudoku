@@ -31,6 +31,7 @@ const zh: Messages = {
   daily: {
     loading: '正在加载今天的题目…',
     error: '每日一题加载失败，请检查网络。',
+    offline: '当前离线。每日一题需要联网，经典模式可以离线玩。',
     retry: '重试',
     title: '每日一题 · {{date}}',
     submitting: '正在提交成绩…',
@@ -58,6 +59,12 @@ const zh: Messages = {
     save: '保存',
     saveError: '保存失败，昵称需为 1–20 个字符。',
     close: '关闭',
+  },
+  pwa: {
+    offlineReady: '已可离线游玩。',
+    update: '有新版本可用。',
+    reload: '更新',
+    later: '稍后',
   },
   pad: { remaining: '剩 {{count}} 个' },
   cell: {

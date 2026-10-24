@@ -17,6 +17,7 @@ import {
   StatusBar,
   WinDialog,
 } from './components/Panels';
+import { PwaToast } from './components/PwaToast';
 import { useKeyboard, useTimer } from './game/hooks';
 import { currentGame, useGameStore } from './game/store';
 
@@ -42,8 +43,17 @@ export function App() {
       if (document.visibilityState === 'visible' && mode === 'daily' && daily?.date !== localDate())
         void loadDaily();
     };
+    // Back online: fetch the daily puzzle that failed to load, or send a win that failed to submit.
+    const onOnline = () => {
+      const { mode, daily, dailyError, loadDaily } = useGameStore.getState();
+      if (mode === 'daily' && (dailyError || daily?.submit === 'error')) void loadDaily();
+    };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
+    };
   }, []);
 
   const dailyDone = mode === 'daily' && !!daily && (game?.status === 'won' || !!daily.result);
@@ -90,6 +100,7 @@ export function App() {
       )}
 
       {picking && <NewGameDialog onClose={() => setPicking(false)} />}
+      <PwaToast />
       {leaderboard && (
         <LeaderboardDialog
           date={daily?.date ?? localDate()}

@@ -31,6 +31,7 @@ const en = {
   daily: {
     loading: 'Loading today’s puzzle…',
     error: 'Could not load the daily puzzle. Check your connection.',
+    offline: 'You are offline. The daily puzzle needs a connection; classic mode works offline.',
     retry: 'Try again',
     title: 'Daily puzzle · {{date}}',
     submitting: 'Submitting your time…',
@@ -57,6 +58,12 @@ const en = {
     save: 'Save',
     saveError: 'Could not save. Use 1–20 characters.',
     close: 'Close',
+  },
+  pwa: {
+    offlineReady: 'Ready to play offline.',
+    update: 'A new version is available.',
+    reload: 'Update',
+    later: 'Later',
   },
   pad: { remaining: '{{count}} left' },
   cell: {
