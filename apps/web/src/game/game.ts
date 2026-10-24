@@ -35,6 +35,8 @@ export interface Game extends Snapshot {
   elapsedMs: number;
   status: 'playing' | 'won';
   hint: ActiveHint | null;
+  /** Focus mode digit; optional because saves from before focus mode lack it. */
+  focus?: number | null;
 }
 
 const HISTORY_LIMIT = 300;
@@ -56,7 +58,14 @@ export function newGame(p: GeneratedPuzzle): Game {
     elapsedMs: 0,
     status: 'playing',
     hint: null,
+    focus: null,
   };
+}
+
+/** Auto notes and focus mode are offered on hard and expert only: there they save busywork,
+ * while on easy and medium writing candidates and spotting singles is the whole puzzle. */
+export function hasAssists(g: Game): boolean {
+  return g.difficulty === 'hard' || g.difficulty === 'expert';
 }
 
 export function isGiven(g: Game, cell: number): boolean {
@@ -179,11 +188,34 @@ export function toggleNoteMode(g: Game): Game {
 
 /** Fills every empty cell's pencil marks with its current candidates. */
 export function autoNotes(g: Game): Game {
-  if (g.status !== 'playing') return g;
+  if (g.status !== 'playing' || !hasAssists(g)) return g;
   const { cands } = createBoard(correctValues(g));
   const notes = g.notes.map((_, i) => (g.values[i] ? 0 : cands[i]!));
   if (notes.every((n, i) => n === g.notes[i])) return g;
   return commit(g, { values: g.values, notes });
+}
+
+/** Long-press on a number toggles focus mode for it (see focusCells). */
+export function toggleFocus(g: Game, d: number): Game {
+  if (g.status !== 'playing' || !hasAssists(g)) return g;
+  return { ...g, focus: g.focus === d ? null : d };
+}
+
+/** The focused digit, or null once it is fully placed (its key is then disabled and could not
+ * switch focus off). */
+export function activeFocus(g: Game): number | null {
+  const d = g.focus;
+  return d && g.status === 'playing' && remaining(g, d) > 0 ? d : null;
+}
+
+/** Empty cells that see no d on the board: the places d can still go. Uses the board as the
+ * player has it, wrong entries included, like a solver working on paper would. */
+export function focusCells(g: Game, d: number): Set<number> {
+  const open = new Set<number>();
+  for (let i = 0; i < 81; i++) {
+    if (!g.values[i] && !PEERS[i]!.some((p) => g.values[p] === d)) open.add(i);
+  }
+  return open;
 }
 
 /** Values with wrong entries removed, so candidates are computed from facts only. */

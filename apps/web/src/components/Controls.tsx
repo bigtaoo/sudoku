@@ -1,11 +1,14 @@
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  activeFocus,
   autoNotes,
   erase,
+  hasAssists,
   inputDigit,
   remaining,
   requestHint,
+  toggleFocus,
   toggleNoteMode,
   undo,
   type Game,
@@ -13,28 +16,118 @@ import {
 import { useGameStore } from '../game/store';
 
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const LONG_PRESS_MS = 450;
+const FOCUS_TIP_KEY = 'sudoku:focusTipSeen';
+
+// The tip flag is a per-device nicety; storage may be blocked, so failures are ignored.
+function focusTipSeen(): boolean {
+  try {
+    return localStorage.getItem(FOCUS_TIP_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markFocusTipSeen(): void {
+  try {
+    localStorage.setItem(FOCUS_TIP_KEY, '1');
+  } catch {
+    // Ignore.
+  }
+}
 
 export function NumberPad({ game }: { game: Game }) {
   const { t } = useTranslation();
   const apply = useGameStore((s) => s.apply);
+  const assists = hasAssists(game);
+  const focus = activeFocus(game);
+  // A tap fills the selected cell; holding a key toggles focus mode instead, and the click that
+  // follows the long press is swallowed.
+  const press = useRef<{ timer: number; long: boolean } | null>(null);
+
+  const startPress = (d: number) => {
+    if (press.current) clearTimeout(press.current.timer);
+    if (!assists) return void (press.current = null);
+    const p = { long: false, timer: 0 };
+    p.timer = window.setTimeout(() => {
+      p.long = true;
+      if ('vibrate' in navigator) navigator.vibrate(10);
+      markFocusTipSeen();
+      apply(toggleFocus, d);
+    }, LONG_PRESS_MS);
+    press.current = p;
+  };
+  const cancelPress = () => {
+    if (press.current) clearTimeout(press.current.timer);
+  };
+  const click = (d: number) => {
+    if (press.current?.long) return void (press.current = null);
+    apply(inputDigit, d);
+  };
+
   return (
     <div className="grid grid-cols-9 gap-1">
       {DIGITS.map((d) => {
         const left = remaining(game, d);
+        const focused = focus === d;
         return (
           <button
             key={d}
             type="button"
             disabled={left === 0 || game.status !== 'playing'}
             aria-label={`${d}, ${t('pad.remaining', { count: left })}`}
-            onClick={() => apply(inputDigit, d)}
-            className="flex h-[clamp(3.25rem,8dvh,4.5rem)] flex-col items-center justify-center rounded-md bg-surface text-entry shadow-sm transition active:scale-95 disabled:opacity-25"
+            aria-pressed={assists ? focused : undefined}
+            onClick={() => click(d)}
+            onPointerDown={() => startPress(d)}
+            onPointerUp={cancelPress}
+            onPointerLeave={cancelPress}
+            onPointerCancel={cancelPress}
+            onContextMenu={(e) => e.preventDefault()}
+            className={[
+              'flex h-[clamp(3.25rem,8dvh,4.5rem)] flex-col items-center justify-center rounded-md shadow-sm transition [-webkit-touch-callout:none] active:scale-95 disabled:opacity-25',
+              focused ? 'bg-accent text-accent-ink' : 'bg-surface text-entry',
+            ].join(' ')}
           >
             <span className="text-3xl leading-none">{d}</span>
-            <span className="mt-1 text-[10px] leading-none text-muted">{left || ''}</span>
+            <span
+              className={[
+                'mt-1 text-[10px] leading-none',
+                focused ? 'opacity-80' : 'text-muted',
+              ].join(' ')}
+            >
+              {left || ''}
+            </span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** One-time pointer to focus mode, floating above the board like the hint panel. */
+export function FocusTip({ game }: { game: Game }) {
+  const { t } = useTranslation();
+  const [closed, setClosed] = useState(false);
+  // Read on every render: the number pad sets the flag on the first long press.
+  if (closed || focusTipSeen() || !hasAssists(game) || game.status !== 'playing' || game.hint)
+    return null;
+  return (
+    <div
+      role="status"
+      className="absolute inset-x-0 bottom-full z-20 mb-2 flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm text-bg shadow-lg"
+    >
+      <span className="flex-1">{t('focus.tip')}</span>
+      <button
+        type="button"
+        aria-label={t('hint.close')}
+        onClick={() => {
+          markFocusTipSeen();
+          setClosed(true);
+        }}
+        className="px-1 text-lg leading-none opacity-70"
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -110,8 +203,9 @@ export function Toolbar({ game }: { game: Game }) {
   const { t } = useTranslation();
   const apply = useGameStore((s) => s.apply);
   const playing = game.status === 'playing';
+  const assists = hasAssists(game);
   return (
-    <div className="grid grid-cols-5 gap-1">
+    <div className={['grid gap-1', assists ? 'grid-cols-5' : 'grid-cols-4'].join(' ')}>
       <ToolButton
         label={t('toolbar.undo')}
         icon={ICONS.undo}
@@ -132,12 +226,14 @@ export function Toolbar({ game }: { game: Game }) {
         disabled={!playing}
         onClick={() => apply(toggleNoteMode)}
       />
-      <ToolButton
-        label={t('toolbar.autoNotes')}
-        icon={ICONS.auto}
-        disabled={!playing}
-        onClick={() => apply(autoNotes)}
-      />
+      {assists && (
+        <ToolButton
+          label={t('toolbar.autoNotes')}
+          icon={ICONS.auto}
+          disabled={!playing}
+          onClick={() => apply(autoNotes)}
+        />
+      )}
       <ToolButton
         label={t('toolbar.hint')}
         icon={ICONS.hint}

@@ -66,6 +66,7 @@ const de: Messages = {
     reload: 'Aktualisieren',
     later: 'Später',
   },
+  focus: { tip: 'Tipp: Halte eine Zahl gedrückt, um zu sehen, wo sie noch hinpasst.' },
   pad: { remaining: 'noch {{count}}' },
   cell: {
     label: 'Zeile {{row}}, Spalte {{col}}',

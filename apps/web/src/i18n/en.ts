@@ -65,6 +65,7 @@ const en = {
     reload: 'Update',
     later: 'Later',
   },
+  focus: { tip: 'Tip: long-press a number to see where it can still go.' },
   pad: { remaining: '{{count}} left' },
   cell: {
     label: 'Row {{row}}, column {{col}}',

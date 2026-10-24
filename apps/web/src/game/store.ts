@@ -166,14 +166,14 @@ export const useGameStore = create<GameStore>()(
       name: 'sudoku:v1',
       version: 2,
       storage: createJSONStorage(() => safeStorage),
-      // Transient UI state (open hint, in-flight requests) is not worth restoring.
+      // Transient UI state (open hint, focus mode, in-flight requests) is not worth restoring.
       partialize: (s) => ({
         mode: s.mode,
         lastDifficulty: s.lastDifficulty,
-        classic: s.classic && { ...s.classic, hint: null },
+        classic: s.classic && { ...s.classic, hint: null, focus: null },
         daily: s.daily && {
           ...s.daily,
-          game: { ...s.daily.game, hint: null },
+          game: { ...s.daily.game, hint: null, focus: null },
           submit: 'idle' as const,
         },
       }),

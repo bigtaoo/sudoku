@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { localDate } from './api/client';
 import { Board } from './components/Board';
-import { NumberPad, Toolbar } from './components/Controls';
+import { FocusTip, NumberPad, Toolbar } from './components/Controls';
 import {
   DailyDoneDialog,
   DailyLoading,
@@ -85,9 +85,10 @@ export function App() {
       {game ? (
         <>
           <StatusBar game={game} {...(mode === 'daily' ? { label: dailyLabel } : {})} />
-          {/* The hint floats above the board, over the status rows, so nothing below it moves. */}
+          {/* The hint (and the focus tip) float above the board, over the status rows, so nothing below them moves. */}
           <div className="relative">
             <HintPanel game={game} />
+            <FocusTip game={game} />
             <Board game={game} />
           </div>
           <div className="flex flex-col gap-3 max-sm:mt-auto">

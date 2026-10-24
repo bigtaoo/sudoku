@@ -1,9 +1,9 @@
 import { COL_OF, digitsOf, ROW_OF, sees } from '@sudoku/core';
 import { useTranslation } from 'react-i18next';
-import { isGiven, isWrong, select, type Game } from '../game/game';
+import { activeFocus, focusCells, isGiven, isWrong, select, type Game } from '../game/game';
 import { useGameStore } from '../game/store';
 
-type Shade = 'sel' | 'hintStrong' | 'hint' | 'same' | 'peer' | 'none';
+type Shade = 'sel' | 'hintStrong' | 'hint' | 'same' | 'peer' | 'dim' | 'open' | 'none';
 
 const SHADE_CLASS: Record<Shade, string> = {
   sel: 'bg-sel',
@@ -11,6 +11,8 @@ const SHADE_CLASS: Record<Shade, string> = {
   hint: 'bg-hint',
   same: 'bg-same',
   peer: 'bg-peer',
+  dim: 'bg-dim',
+  open: 'bg-open',
   none: 'bg-surface',
 };
 
@@ -38,11 +40,16 @@ export function Board({ game }: { game: Game }) {
   const { selected } = game;
   const selDigit = selected === null ? 0 : game.values[selected]!;
   const { strong, soft, eliminated } = hintCells(game);
+  const focus = activeFocus(game);
+  const open = focus ? focusCells(game, focus) : null;
 
   const shadeOf = (i: number): Shade => {
     if (i === selected) return 'sel';
     if (strong.has(i)) return 'hintStrong';
     if (soft.has(i)) return 'hint';
+    // Focus mode replaces the selection highlights: its digit, then where it can still go.
+    // Its placed copies take the deeper selection blue, which stands apart from the grey.
+    if (focus) return game.values[i] === focus ? 'sel' : open!.has(i) ? 'open' : 'dim';
     if (selDigit && game.values[i] === selDigit) return 'same';
     if (selected !== null && sees(selected, i)) return 'peer';
     return 'none';

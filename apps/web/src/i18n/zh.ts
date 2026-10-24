@@ -66,6 +66,7 @@ const zh: Messages = {
     reload: '更新',
     later: '稍后',
   },
+  focus: { tip: '小技巧：长按数字，可以看到它还能填在哪些格子。' },
   pad: { remaining: '剩 {{count}} 个' },
   cell: {
     label: '第 {{row}} 行第 {{col}} 列',

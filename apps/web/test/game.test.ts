@@ -2,8 +2,10 @@ import { bit, generatePuzzle } from '@sudoku/core';
 import { describe, expect, it } from 'vitest';
 import {
   applyHint,
+  activeFocus,
   autoNotes,
   erase,
+  focusCells,
   inputDigit,
   isWrong,
   moveSelection,
@@ -13,6 +15,7 @@ import {
   requestHint,
   select,
   tick,
+  toggleFocus,
   toggleNoteMode,
   undo,
   type Game,
@@ -20,6 +23,8 @@ import {
 
 const puzzle = generatePuzzle({ difficulty: 'easy', seed: 42 });
 const fresh = () => newGame(puzzle);
+// Auto notes and focus mode only exist on hard and expert; the rules do not look at clue counts.
+const hard = (): Game => ({ ...fresh(), difficulty: 'hard' });
 const firstEmpty = (g: Game) => g.values.findIndex((v) => v === 0);
 const wrongDigit = (g: Game, cell: number) => (g.solution[cell]! % 9) + 1;
 
@@ -71,10 +76,30 @@ describe('game rules', () => {
   });
 
   it('auto notes match candidates', () => {
-    const g = autoNotes(fresh());
+    const g = autoNotes(hard());
     const cell = firstEmpty(g);
     expect(g.notes[cell]! & bit(g.solution[cell]!)).toBeTruthy();
     expect(g.notes.every((n, i) => (g.values[i] ? n === 0 : n !== 0))).toBe(true);
+  });
+
+  it('offers auto notes and focus only on hard and expert', () => {
+    const easy = fresh();
+    expect(autoNotes(easy)).toBe(easy);
+    expect(toggleFocus(easy, 5)).toBe(easy);
+  });
+
+  it('focus mode shows where a digit can still go', () => {
+    let g = toggleFocus(hard(), 5);
+    expect(activeFocus(g)).toBe(5);
+    const open = focusCells(g, 5);
+    // Every open cell is empty, and the solution's 5s that are still missing are all open.
+    for (const i of open) expect(g.values[i]).toBe(0);
+    g.solution.forEach((v, i) => {
+      if (v === 5 && g.values[i] === 0) expect(open.has(i)).toBe(true);
+    });
+    expect(open.size).toBeLessThan(g.values.filter((v) => v === 0).length);
+    g = toggleFocus(g, 5);
+    expect(activeFocus(g)).toBeNull();
   });
 
   it('wraps selection around the edges', () => {

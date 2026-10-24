@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
 /* Cell highlights rank peer (neutral grey) < same digit (blue tint) < selected (deeper blue plus an
- * accent ring), so the three stay apart by hue and outline, not only lightness. Digits on every
+ * accent ring), so the three stay apart by hue and outline, not only lightness. Focus mode greys
+ * out (dim) every cell its digit cannot go and lifts the rest (open: plain white in light mode,
+ * but lighter than the surface in dark mode, where a darker dim alone reads too weakly). Digits on every
  * fill keep at least 3:1 (they are large text); entry/wrong/muted on the hint fills at least 4.5:1. */
 :root {
   --bg: #f6f5f1;
@@ -15,6 +17,8 @@
   --sel: #a9c6f7;
   --peer: #e9ebef;
   --same: #d6e3fb;
+  --dim: #dcdfe5;
+  --open: #ffffff;
   --accent: #1f4fb8;
   --accent-ink: #ffffff;
   --hint: #fdf0c4;
@@ -35,6 +39,8 @@
     --sel: #2f5394;
     --peer: #262a31;
     --same: #26375a;
+    --dim: #15171b;
+    --open: #353b47;
     --accent: #6e9cff;
     --accent-ink: #0d1117;
     --hint: #2f2a1a;
@@ -55,6 +61,8 @@
   --color-sel: var(--sel);
   --color-peer: var(--peer);
   --color-same: var(--same);
+  --color-dim: var(--dim);
+  --color-open: var(--open);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-hint: var(--hint);
