@@ -125,10 +125,10 @@ export function Board({ game }: { game: Game }) {
     <div
       role="grid"
       aria-label={t('app.title')}
-      className="@container grid aspect-square w-full grid-cols-3 gap-[2px] overflow-hidden rounded-md border-2 border-line-strong bg-line-strong select-none"
+      className="@container grid aspect-square w-full grid-cols-3 grid-rows-3 gap-[2px] overflow-hidden rounded-md border-2 border-line-strong bg-line-strong select-none"
     >
       {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((b) => (
-        <div key={b} className="grid grid-cols-3 gap-px bg-line">
+        <div key={b} className="grid min-h-0 min-w-0 grid-cols-3 grid-rows-3 gap-px bg-line">
           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((k) =>
             cell((Math.floor(b / 3) * 3 + Math.floor(k / 3)) * 9 + (b % 3) * 3 + (k % 3)),
           )}
