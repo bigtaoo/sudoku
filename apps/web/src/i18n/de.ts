@@ -1,0 +1,77 @@
+import type { Messages } from './en';
+
+const de: Messages = {
+  app: { title: 'Sudoku' },
+  language: { label: 'Sprache' },
+  difficulty: { easy: 'Leicht', medium: 'Mittel', hard: 'Schwer', expert: 'Experte' },
+  status: { mistakes: 'Fehler', hints: 'Tipps', time: 'Zeit' },
+  toolbar: {
+    undo: 'Zurück',
+    erase: 'Löschen',
+    notes: 'Notizen',
+    notesOn: 'An',
+    notesOff: 'Aus',
+    autoNotes: 'Auto-Notizen',
+    hint: 'Tipp',
+  },
+  newGame: {
+    button: 'Neues Spiel',
+    title: 'Neues Spiel',
+    pick: 'Schwierigkeit wählen',
+    cancel: 'Abbrechen',
+    generating: 'Rätsel wird erstellt…',
+    failed: 'Das Rätsel konnte nicht erstellt werden. Bitte erneut versuchen.',
+  },
+  win: {
+    title: 'Gelöst!',
+    body: 'Du hast ein Rätsel der Stufe „{{difficulty}}“ gelöst.',
+    again: 'Nochmal spielen',
+  },
+  pad: { remaining: 'noch {{count}}' },
+  cell: {
+    label: 'Zeile {{row}}, Spalte {{col}}',
+    given: 'vorgegeben {{digit}}',
+    value: '{{digit}}',
+    empty: 'leer',
+    notes: 'Notizen {{digits}}',
+  },
+  unit: { row: 'Zeile {{n}}', col: 'Spalte {{n}}', box: 'Block {{n}}' },
+  cellRef: 'Z{{row}}S{{col}}',
+  hint: {
+    apply: 'Anwenden',
+    close: 'Schließen',
+    none: 'Für diese Stellung gibt es keinen Tipp.',
+    mistakes_one: '{{count}} Ziffer ist falsch (markiert). „Anwenden“ entfernt sie.',
+    mistakes_other: '{{count}} Ziffern sind falsch (markiert). „Anwenden“ entfernt sie.',
+    technique: {
+      fullHouse: 'Letzte freie Zelle',
+      hiddenSingle: 'Versteckter Einer',
+      nakedSingle: 'Nackter Einer',
+      lockedCandidates: 'Block-Linien-Interaktion',
+      nakedPair: 'Nacktes Paar',
+      hiddenPair: 'Verstecktes Paar',
+      nakedTriple: 'Nackter Dreier',
+      hiddenTriple: 'Versteckter Dreier',
+      xWing: 'X-Wing',
+      xyWing: 'XY-Wing',
+      swordfish: 'Schwertfisch',
+    },
+    explain: {
+      fullHouse: 'In {{unit}} ist nur noch ein Feld frei, also muss {{cell}} eine {{digit}} sein.',
+      hiddenSingle: 'In {{unit}} kann die {{digit}} nur in {{cell}} stehen.',
+      nakedSingle: 'In {{cell}} ist nur noch die {{digit}} möglich.',
+      lockedCandidates:
+        'In {{unit}} kann die {{digit}} nur in den markierten Feldern stehen, die zusammen in einem weiteren Bereich liegen. Dort kann die {{digit}} überall sonst gestrichen werden.',
+      nakedSubset:
+        '{{cells}} können nur {{digits}} enthalten, also lassen sich diese Ziffern aus den übrigen Feldern von {{unit}} streichen.',
+      hiddenSubset:
+        'In {{unit}} passen {{digits}} nur in {{cells}}, also können dort alle anderen Kandidaten gestrichen werden.',
+      fish: 'Die {{digit}} ist auf die markierten Felder beschränkt, die in passenden Zeilen und Spalten liegen. Im Rest dieser Linien kann die {{digit}} gestrichen werden.',
+      xyWing:
+        'Egal welche Ziffer das Zentrum {{pivot}} bekommt, einer der Flügel wird zur {{digit}}. Felder, die beide Flügel sehen, können keine {{digit}} sein.',
+    },
+    eliminationNote: 'Beim Anwenden werden deine Notizen aktualisiert.',
+  },
+};
+
+export default de;
